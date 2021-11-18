@@ -1,0 +1,319 @@
+/*
+----------ToDo------------------------
+#设计检测id是否重复函数，在插入函数中使用@completed
+#完善按id排序的功能@completed
+#修复删除函数bug@completed
+#修复修改函数bug@completed
+#优化变量定义@completed
+#简化操作@completed
+#优化结构，使用临时变量进行操作
+#美化界面，输出对齐@completed
+#简化代码
+#美化代码
+#探索结构体数组指针的传递应用，尽可能不使用全局变量@completed
+---------------------------------------
+*/
+
+#include <stdio.h>
+#define N 10    //规定可设置的联系人上限
+
+typedef struct list     //定义主结构体通讯录list
+        {
+            char name[20];  //姓名
+            int id;         //id
+            long long num;        //号码
+        } list;
+
+int check(const list *guys, int n);        //查看所有联系人函数
+int addQuick(list *guys, int* n);     //增加联系人（末尾）
+int addInsert(list *guys, int* n);    //增加联系人指定
+int del(list *guys, int* n);          //删除联系人
+int search(const list *guys, int n);       //查找联系人
+int change(list *guys, int n);       //修改联系人
+int sort(list *guys, int n);         //按id进行排序
+int end();                  //函数执行结束返回判断
+int isFull(const list *guys, int n);          //判断通讯录是否已满
+int isRepeat(const list *guys, int idn, int n);//检测id是否重复函数
+
+int main(){
+    int flag = 1;       //判断是否继续进行下一步操作
+    int option = 0;     //选项值
+    int i = 0;          //定义当前联系人数量
+    list guys[N];
+
+    while (flag == 1)
+    {   
+        printf("==================\n");
+        printf("请选择要进行的操作:\n");
+        printf("  1.查看通讯录\n");
+        printf("  2.增加联系人(末尾)\n");
+        printf("  3.增加联系人(指定)\n");   //添加新联系人时请确保id唯一
+        printf("  4.删除指定联系人\n");
+        printf("  5.查找联系人\n");
+        printf("  6.修改联系人\n");
+        printf("  7.按ID进行排序\n");
+        printf("  8.退出\n");
+        printf("==================\n");
+        scanf("%d",&option);
+        switch (option)
+        {
+            case 1:flag = check(guys, i); break;
+            case 2:flag = addQuick(guys, &i); break;
+            case 3:flag = addInsert(guys, &i); break;
+            case 4:flag = del(guys, &i); break;
+            case 5:flag = search(guys, i); break;
+            case 6:flag = change(guys, i); break;
+            case 7:flag = sort(guys, i); break;
+            case 8:flag = 0; break;
+            default:printf("输入错误！\n");break;
+        }
+    }
+    return 0;
+}
+
+int check(const list *guys, int n)
+{   
+    int i;
+    if (n == 0)
+    {
+        printf("目前联系人为空！\n");
+        return end();
+    }
+
+    printf("==姓名==");
+    printf("===ID===");
+    printf("======号码======\n");
+
+    for ( i = 0; i < n; i++)
+    {   
+        printf("|");
+        printf("%-11s",guys[i].name);
+        printf("%-7d",guys[i].id);
+        printf("%12lld",guys[i].num);
+        printf("|");
+        printf("\n");
+    }
+    printf("\n=========================\n");
+
+    return end();
+}
+
+int addQuick(list *guys, int* n)
+{   
+    int i,j,idn,flag = 0;
+    char q;
+    if(isFull(guys, *n) == 1)
+        return end();
+    for ( i = *n; i < N; i++)
+    {   
+        printf("请输入联系人ID\n");
+            scanf(" %d", &idn);
+        if (isRepeat(guys, idn, *n) == 1)
+        {
+            i--;
+            continue;
+        }
+        else guys[i].id = idn;
+        printf("请输入添加的联系人姓名:\n");
+        scanf(" %s",&guys[i].name);         fflush(stdin);
+        printf("请输入添加的联系人电话:\n");
+        scanf(" %11lld",&guys[i].num);          fflush(stdin);
+        printf("设置完毕，已设置第%d个联系人,是否继续? y or n\n",++(*n));
+        scanf(" %c",&q);                    fflush(stdin);
+        if (q == 'y')
+        {   
+            continue;
+        }
+        else if (q == 'n')
+        {
+            return 1;
+        }
+        else 
+        {
+            printf("输入有误！默认退出\n");
+        }
+    }
+    return end();
+}
+
+int addInsert(list *guys, int* n)
+{   
+    int i,j,idn,flag = 1;
+    if (isFull(guys, *n) == 1)
+    {
+        return end();
+    }
+    printf("请输入需要插入的位置(1~%d)：\n",*n);
+    scanf("%d",&i);
+    while (flag == 1)
+    {
+        printf("请输入联系人ID\n");
+        scanf(" %d", &idn);
+        if (isRepeat(guys, idn, *n) == 1)
+        {
+            continue;
+        }
+        else 
+        {   
+            flag = 0;
+        }
+    }
+
+    for(j = *n; j > i-1; j--)
+    {
+        guys[j] = guys[j-1];
+    }
+    guys[i-1].id = idn;
+    printf("请输入添加的联系人姓名:\n");
+        scanf(" %s",&guys[i-1].name);         fflush(stdin);
+    printf("请输入添加的联系人电话:\n");
+        scanf(" %11lld",&guys[i-1].num);          fflush(stdin);
+    (*n)++;
+
+    return end();
+}
+
+int del(list *guys, int* n)
+{   
+    int idn,i,j;
+    if (*n != 0)
+    {
+        printf("请输入要删除的ID\n");
+        scanf("%d",&idn);
+        for (i=0; i<*n;i++)
+        {
+            if(guys[i].id == idn)
+            {
+                for (j = i; j < *n; j++)
+                {
+                    guys[j] = guys[j+1];
+                }
+                break;
+            }
+        }
+        (*n)--;
+    }
+    else printf("通讯录为空！\n");
+    return end();
+}
+
+int search(const list *guys, int n)
+{   
+    int idn,i;
+    if (n != 0)
+    {
+        printf("请输入你要查询联系人的ID:\n");
+        scanf(" %d",&idn);
+        for (i = 0; i < n; i++)
+        {
+            if (guys[i].id == idn)
+            {
+                printf("==姓名==");
+                printf("===ID===");
+                printf("======号码======\n");
+                printf("|");
+                printf("%-11s",guys[i].name);
+                printf("%-7d",guys[i].id);
+                printf("%12lld",guys[i].num);
+                printf("|");
+                printf("\n=========================\n");
+            }
+        }
+    }
+    else printf("通讯录为空！\n");
+    return end();
+}
+
+int change(list *guys, int n)
+{   
+    int i,idn;
+    printf("请输入你要修改的联系人的ID\n");
+    scanf(" %d",&idn);
+        for (i = 0; i < n; i++)
+        {
+            if (guys[i].id == idn)
+            {
+                printf("请输入修改后的姓名\n");
+                scanf(" %s",&guys[i].name);
+                printf("请输入修改后的号码\n");
+                scanf(" %11lld",&guys[i].num); 
+                printf("修改成功！\n");
+                break;
+            }
+            else if(i == n-1 )
+                printf("该ID不存在！\n");
+        }
+    return end();
+}
+
+int sort(list *guys, int n)
+{
+    int i,j;
+    struct list temp;
+    printf("sorting...\n");
+    for (i = 0;i < n;i++)
+    {
+        for (j = i;j < n - 1;j++)
+        {
+            if (guys[j].id > guys[j+1].id)
+            {
+                temp = guys[j]; guys[j] = guys[j+1]; guys[j+1] = temp;
+            }
+        }
+    }
+    printf("sort completed!\n");
+    return 1;
+}
+
+int end()
+{   
+    char flag;
+    printf("\n是否继续?(y or n)\n");
+    scanf(" %c",&flag);
+    if (flag == 'y')
+    {
+        return 1;
+    }
+    else if (flag == 'n')
+    {
+        return 0;
+    }
+    else
+    {
+        printf("输入错误!\n");
+        return end();
+    }
+    return 0;       //防止编译器出现warning
+}
+
+int isFull(const list *guys, int n)
+{   
+    int flag = 1;
+    if (n == N)
+    {
+        printf("通讯录已满，请购买更高级的手机或删除一些联系人！\n");
+        flag = 1;
+    }
+    else 
+    {
+        printf("正在操作……\n");
+        flag = 0;
+    }
+    return flag;
+}
+
+int isRepeat(const list *guys, int idn, int n)
+{
+    int i;
+    int flag = 0;
+    for ( i = 0; i < n; i++)
+    {
+        if (guys[i].id == idn)
+        {
+            flag = 1;
+            printf("通讯录已存在相同ID！\n");
+            break;
+        }
+    }
+    return flag;
+}
